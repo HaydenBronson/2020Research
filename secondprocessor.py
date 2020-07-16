@@ -19,6 +19,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 
 from tW_scattering.Tools.helpers import *
+from coffea.analysis_objects import JaggedCandidateArray
 
 matplotlib.use('Agg')
 
@@ -42,19 +43,19 @@ class doublemuonProcessor(processor.ProcessorABC):
     def process(self, df):
         output = self.accumulator.identity()
         dataset = df["dataset"]
-        muons = awkward.JaggedArray.zip(
-            pt=df['Muon_pt'], 
-            eta=df['Muon_eta'], 
-            charge=df['Muon_charge'], 
-            mass=df['Muon_mass'], 
-            phi=df['Muon_phi']
-            )
+        muons = JaggedCandidateArray.candidatesfromcounts(
+            df['nMuon'],
+            pt=df['Muon_pt'],
+            eta=df['Muon_eta'],
+            phi=df['Muon_phi'],
+            mass=df['Muon_mass'],
+            charge=df['Muon_charge'],
+        )
         #output['cutflow']['allevents'] += muons.size
 
-        cut = (muons['pt'] > 25) & (abs(muons['eta']) < 2.4)
-        dimuons = muons[cut]
-        one_pair_dimuon = (dimuons.counts==2) & (dimuons['charge'].prod()==-1)
-        output['mass'].fill(dataset=dataset, mass=dimuons[one_pair_dimuon].mass.flatten())
+        cut = (muons['pt'] > 25) & (abs(muons['eta']) < 2.4) & (muons['charge'].prod()==-1)
+        dimuons = muons[cut].choose(2)
+        output['mass'].fill(dataset=dataset, mass=dimuons.mass.flatten())
         return output
 
     def postprocess(self, accumulator):
@@ -81,26 +82,19 @@ def main():
 
     # initialize cache
     cache = dir_archive(os.path.join(os.path.expandvars(cfg['caches']['base']), cfg['caches']['doublemuonProcessor']), serialized=True)
-    if not overwrite:
-        cache.load()
 
-    if cfg == cache.get('cfg') and histograms == cache.get('histograms') and fileset == cache.get('fileset') and cache.get('doublemuon_output'):
-        output = cache.get('doublemuon_output')
-
-    else:
-        # Run the processor
-        output = processor.run_uproot_job(fileset,
+    output = processor.run_uproot_job(fileset,
                                       treename='Events',
                                       processor_instance=doublemuonProcessor(),
                                       executor=processor.futures_executor,
                                       executor_args={'workers': 12, 'function_args': {'flatten': False}},
                                       chunksize=500000,
                                      )
-        cache['fileset']        = fileset
-        cache['cfg']            = cfg
-        cache['histograms']     = histograms
-        cache['doublemuon_output']  = output
-        cache.dump()
+    cache['fileset']        = fileset
+    cache['cfg']            = cfg
+    cache['histograms']     = histograms
+    cache['doublemuon_output']  = output
+    cache.dump()
 
     # Make a few plots
     outdir = "./tmp_plots"
