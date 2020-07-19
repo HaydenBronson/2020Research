@@ -53,7 +53,7 @@ class doublemuonProcessor(processor.ProcessorABC):
         )
         #output['cutflow']['allevents'] += muons.size
 
-        cut = (muons['pt'] > 25) & (abs(muons['eta']) < 2.4) & (muons['charge'].prod()==-1)
+        cut = (muons.pt > 25) & (abs(muons.eta) < 2.4) & (muons['charge'].prod()==-1)
         dimuons = muons[cut].choose(2)
         output['mass'].fill(dataset=dataset, mass=dimuons.mass.flatten())
         return output
