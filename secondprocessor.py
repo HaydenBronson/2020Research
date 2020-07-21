@@ -28,7 +28,7 @@ class doublemuonProcessor(processor.ProcessorABC):
     def __init__(self):
         dataset_axis = hist.Cat("dataset", "Primary dataset")
         pt_axis = hist.Bin("pt",r"$p_{\mu\mu}$[GeV]", 600,0,1000)
-        mass_axis = hist.Bin("mass", r"m_{\mu\mu}$[GeV]", 100, 0, 10)
+        mass_axis = hist.Bin("mass", r"m_{\mu\mu}$[GeV]", 100, 0, 150)
         eta_axis = hist.Bin("eta", r"$\eta$", 60, -5.5, 5.5)
 
         self._accumulator = processor.dict_accumulator({
@@ -45,11 +45,11 @@ class doublemuonProcessor(processor.ProcessorABC):
         dataset = df["dataset"]
         muons = JaggedCandidateArray.candidatesfromcounts(
             df['nMuon'],
-            pt=df['Muon_pt'],
-            eta=df['Muon_eta'],
-            phi=df['Muon_phi'],
-            mass=df['Muon_mass'],
-            charge=df['Muon_charge'],
+            pt=df['Muon_pt'].content,
+            eta=df['Muon_eta'].content,
+            phi=df['Muon_phi'].content,
+            mass=df['Muon_mass'].content,
+            charge=df['Muon_charge'].content,
         )
         #output['cutflow']['allevents'] += muons.size
 
@@ -116,7 +116,7 @@ def main():
             #new_mass_bins = hist.Bin('mass', r'$m_{/mu/mu} \ (GeV)', 20, 0, 200)
             #histogram = histogram.rebin('mass', new_mass_bins)
 
-        ax = hist.plot1d(histogram,overlay="dataset", density=False, stack=True) # make density plots because we don't care about x-sec differences
+        ax = hist.plot1d(histogram,overlay="dataset", density=False, stack=False) # make density plots because we don't care about x-sec differences
         ax.set_yscale('linear') # can be log
         #ax.set_ylim(0,0.1)
         ax.figure.savefig(os.path.join(outdir, "{}.pdf".format(name)))

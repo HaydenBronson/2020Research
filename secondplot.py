@@ -28,7 +28,7 @@ cache.load()
 
 histograms = cache.get('histograms')
 output = cache.get('doublemuon_output')
-plotDir = os.path.expandvars(cfg['meta']['plots']) + '/doublemuonPlots/'
+plotDir = os.path.expandvars(cfg['meta']['plots']) + '/doublemuonPlots2/'
 finalizePlotDir(plotDir)
 
 if not histograms:
@@ -86,13 +86,13 @@ for name in histograms:
         new_eta_bins = hist.Bin('eta', r'$\eta$', 30, -5.5, 5.5)
         histogram = histogram.rebin('eta', new_eta_bins)
     elif name == 'mass':
-        new_mass_bin = hist.Bin("mass", r"m_{\mu\mu}$[GeV]", 100, 0, 10)
+        new_mass_bin = hist.Bin("mass", r"m_{\mu\mu}$[GeV]", 100, 0, 150)
         histogram = histogram.rebin('mass', new_mass_bin)
     else:
         skip = True
 
     if not skip:
-        ax = hist.plot1d(histogram,overlay="dataset", stack=True) # make density plots because we don't care about x-sec differences
+        ax = hist.plot1d(histogram,overlay="dataset", stack=False) # make density plots because we don't care about x-sec differences
         for l in ['linear', 'log']:
             saveFig(ax, plotDir, name, scale=l)
         ax.clear()
