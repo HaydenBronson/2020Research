@@ -43,7 +43,7 @@ for name in histograms:
     histogram = output[name]
     if name == 'b_nonb_mass':
         # rebin
-        new_mass_bins = hist.Bin('mass', r'mass \ (GeV)', 20, 0, 200)
+        new_mass_bins = hist.Bin('mass', r"mass (GeV)", 100, 0, 100)
         histogram = histogram.rebin('mass', new_mass_bins)
     elif name == 'b_nonb_eta':
         # rebin

@@ -54,14 +54,15 @@ class b_nonb_pairingProcessor(processor.ProcessorABC):
             bjet = df['Jet_isGoodBJet'].content,
         )
 
-        #b = Jet[Jet['bjet']==1]
-        #nonb = Jet[(Jet['goodjet']==1) & (Jet['bjet']==0)]
-        good = Jet[Jet['goodjet']==1]
-        #b_nonb_pair = b.cross(nonb)
-        b_nonb_pair = good.choose(2)
+        b = Jet[Jet['bjet']==1]
+        nonb = Jet[(Jet['goodjet']==1) & (Jet['bjet']==0)]
+        #good = Jet[Jet['goodjet']==1]
+        b_nonb_pair = b.cross(nonb)
+        #b_nonb_pair = good.choose(2)
         output['b_nonb_mass'].fill(dataset=dataset, mass=b_nonb_pair.mass.flatten())
-        #output['b_nonb_eta'].fill(dataset=dataset, eta=b_nonb_pair.eta.flatten())
-        #output['b_nonb_pt'].fill(dataset=dataset, pt=b_nonb_pair.pt.flatten())
+        output['b_nonb_eta'].fill(dataset=dataset, eta=b_nonb_pair.eta.flatten())
+        output['b_nonb_pt'].fill(dataset=dataset, pt=b_nonb_pair.pt.flatten())
+        return output
 
     def postprocess(self, accumulator):
         return accumulator
@@ -78,7 +79,7 @@ def main():
         #"ttbar":        glob.glob("/hadoop/cms/store/user/dspitzba/nanoAOD/ttw_samples/0p1p2/TTJets_SingleLeptFromT_TuneCP5_13TeV-madgraphMLM-pythia8__RunIIAutumn18NanoAODv6-Nano25Oct2019_102X_upgrade2018_realistic_v20-v1/merged/*.root") # adding this is still surprisingly fast (20GB file!)
     }
 
-    histograms = ['b_nonb_mass' ]
+    histograms = ['b_nonb_mass', 'b_nonb_eta', 'b_nonb_pt' ]
 
     cache = dir_archive(os.path.join(os.path.expandvars(cfg['caches']['base']), cfg['caches']['b_nonb_pairingProcessor']), serialized=True)
     
