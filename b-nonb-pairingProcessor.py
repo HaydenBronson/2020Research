@@ -33,9 +33,9 @@ class b_nonb_pairingProcessor(processor.ProcessorABC):
             'b_nonb_mass': hist.Hist('Counts', dataset_axis, mass_axis),
             'b_nonb_eta': hist.Hist('Counts', dataset_axis, eta_axis),
             'b_nonb_pt': hist.Hist('Counts', dataset_axis, pt_axis),
-            #'b_b_nonb_mass': hist.Hist('Counts', dataset_axis, mass_axis),
-            #'b_b_nonb_eta': hist.Hist('Counts', dataset_axis, eta_axis),
-            #'b_b_nonb_pt': hist.Hist('Counts', dataset_axis, pt_axis),
+            'b_b_nonb_mass': hist.Hist('Counts', dataset_axis, mass_axis),
+            'b_b_nonb_eta': hist.Hist('Counts', dataset_axis, eta_axis),
+            'b_b_nonb_pt': hist.Hist('Counts', dataset_axis, pt_axis),
         })
     @property
     def accumulator(self):
@@ -56,12 +56,15 @@ class b_nonb_pairingProcessor(processor.ProcessorABC):
 
         b = Jet[Jet['bjet']==1]
         nonb = Jet[(Jet['goodjet']==1) & (Jet['bjet']==0)]
-        #good = Jet[Jet['goodjet']==1]
         b_nonb_pair = b.cross(nonb)
-        #b_nonb_pair = good.choose(2)
         output['b_nonb_mass'].fill(dataset=dataset, mass=b_nonb_pair.mass.flatten())
         output['b_nonb_eta'].fill(dataset=dataset, eta=b_nonb_pair.eta.flatten())
         output['b_nonb_pt'].fill(dataset=dataset, pt=b_nonb_pair.pt.flatten())
+
+        b_b_nonb_pair = b.cross(b).cross(nonb)
+        output['b_b_nonb_mass'].fill(dataset=dataset, mass=b_b_nonb_pair.mass.flatten())
+        output['b_b_nonb_eta'].fill(dataset=dataset, eta=b_b_nonb_pair.eta.flatten())
+        output['b_b_nonb_pt'].fill(dataset=dataset, pt=b_b_nonb_pair.pt.flatten())
         return output
 
     def postprocess(self, accumulator):
@@ -79,7 +82,7 @@ def main():
         #"ttbar":        glob.glob("/hadoop/cms/store/user/dspitzba/nanoAOD/ttw_samples/0p1p2/TTJets_SingleLeptFromT_TuneCP5_13TeV-madgraphMLM-pythia8__RunIIAutumn18NanoAODv6-Nano25Oct2019_102X_upgrade2018_realistic_v20-v1/merged/*.root") # adding this is still surprisingly fast (20GB file!)
     }
 
-    histograms = ['b_nonb_mass', 'b_nonb_eta', 'b_nonb_pt' ]
+    histograms = ['b_nonb_mass', 'b_nonb_eta', 'b_nonb_pt', 'b_b_nonb_mass', 'b_b_nonb_eta', 'b_b_nonb_pt' ]
 
     cache = dir_archive(os.path.join(os.path.expandvars(cfg['caches']['base']), cfg['caches']['b_nonb_pairingProcessor']), serialized=True)
     
@@ -112,7 +115,7 @@ def main():
         print (name)
         histogram = output[name]
 
-        ax = hist.plot1d(histogram,overlay="dataset", density=False, stack=True) # make density plots because we don't care about x-sec differences
+        ax = hist.plot1d(histogram,overlay="dataset", density=False, stack=False) # make density plots because we don't care about x-sec differences
         ax.set_yscale('linear') # can be log
         #ax.set_ylim(0,0.1)
         ax.figure.savefig(os.path.join(outdir, "{}.pdf".format(name)))

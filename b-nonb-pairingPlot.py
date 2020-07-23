@@ -53,22 +53,22 @@ for name in histograms:
         # rebin
         new_pt_bins = hist.Bin('pt', r"$p_{T}$ (GeV)", 600, 0, 1000)
         histogram = histogram.rebin('pt', new_pt_bins)
-    '''elif name == 'non_b_pt':
+    elif name == 'b_b_nonb_mass':
         # rebin
-        new_pt_bins = hist.Bin('pt', r'$E_T^{miss} \ (GeV)$', 20, 0, 200)
-        histogram = histogram.rebin('pt', new_pt_bins)
-    elif name == 'non_b_eta':
+        new_mass_bins = hist.Bin('mass', r"mass (GeV)", 100, 0, 100)
+        histogram = histogram.rebin('mass', new_mass_bins)
+    elif name == 'b_b_nonb_eta':
         # rebin
         new_eta_bins = hist.Bin("eta", r"$\eta$", 60, -5.5, 5.5)
         histogram = histogram.rebin('eta', new_eta_bins)
-    elif name == 'non_b_mass':
+    elif name == 'b_b_nonb_pt':
         # rebin
-        new_mass_bins = hist.Bin("mass", r"m_{\mu\mu}$ (GeV)", 100, 0, 100)
-        histogram = histogram.rebin('mass', new_mass_bins)'''
+        new_pt_bins = hist.Bin('pt', r"$p_{T}$ (GeV)", 600, 0, 1000)
+        histogram = histogram.rebin('pt', new_pt_bins)
 
 
     if not skip:
-        ax = hist.plot1d(histogram,overlay="dataset", stack=True) # make density plots because we don't care about x-sec differences
+        ax = hist.plot1d(histogram,overlay="dataset", stack=False) # make density plots because we don't care about x-sec differences
         for l in ['linear', 'log']:
             saveFig(ax, plotDir, name, scale=l)
         ax.clear()
