@@ -27,15 +27,17 @@ class b_nonb_pairingProcessor(processor.ProcessorABC):
     def __init__(self):
         dataset_axis = hist.Cat("dataset", 'Primary dataset')
         pt_axis = hist.Bin("pt", r"$p_{T}$ (GeV)", 600, 0, 1000)
-        mass_axis = hist.Bin("mass", r"mass (GeV)", 100, 0, 100)
+        mass_axis = hist.Bin("mass", r"mass (GeV)", 50, 0, 40)
         eta_axis = hist.Bin("eta", r"$\eta$", 60, -5.5, 5.5)
         self._accumulator = processor.dict_accumulator({
-            'b_nonb_mass': hist.Hist('Counts', dataset_axis, mass_axis),
-            'b_nonb_eta': hist.Hist('Counts', dataset_axis, eta_axis),
-            'b_nonb_pt': hist.Hist('Counts', dataset_axis, pt_axis),
-            'b_b_nonb_mass': hist.Hist('Counts', dataset_axis, mass_axis),
-            'b_b_nonb_eta': hist.Hist('Counts', dataset_axis, eta_axis),
-            'b_b_nonb_pt': hist.Hist('Counts', dataset_axis, pt_axis),
+            'b_nonb_massmax': hist.Hist('Counts', dataset_axis, mass_axis),
+            'b_nonb_massmin': hist.Hist('Counts', dataset_axis, mass_axis),
+            'b_b_nonb_massmax': hist.Hist('Counts', dataset_axis, mass_axis),
+            'b_b_nonb_massmin': hist.Hist('Counts', dataset_axis, mass_axis),
+            'jet_pair_massmax': hist.Hist('Counts', dataset_axis, mass_axis),
+            'jet_pair_massmin': hist.Hist('Counts', dataset_axis, mass_axis),
+            'lepton_pair_massmax': hist.Hist('Counts', dataset_axis, mass_axis),
+            'lepton_pair_massmin': hist.Hist('Counts', dataset_axis, mass_axis),
         })
     @property
     def accumulator(self):
@@ -53,18 +55,33 @@ class b_nonb_pairingProcessor(processor.ProcessorABC):
             goodjet = df['Jet_isGoodJetAll'].content,
             bjet = df['Jet_isGoodBJet'].content,
         )
+        """Lepton = JaggedCandidateArray.candidatesfromcounts(
+            df['nLepton'],
+            pt = df['Lepton_pt'].content,
+            eta = df['Lepton_eta'].content,
+            phi = df['Lepton_phi'].content,
+            pdgId = df['Lepton_pdgId'].content,
+        )"""
 
         b = Jet[Jet['bjet']==1]
         nonb = Jet[(Jet['goodjet']==1) & (Jet['bjet']==0)]
         b_nonb_pair = b.cross(nonb)
-        output['b_nonb_mass'].fill(dataset=dataset, mass=b_nonb_pair.mass.flatten())
-        output['b_nonb_eta'].fill(dataset=dataset, eta=b_nonb_pair.eta.flatten())
-        output['b_nonb_pt'].fill(dataset=dataset, pt=b_nonb_pair.pt.flatten())
+        output['b_nonb_massmax'].fill(dataset=dataset, mass=b_nonb_pair.mass.argmax().flatten())
+        output['b_nonb_massmin'].fill(dataset=dataset, mass=b_nonb_pair.mass.argmin().flatten())
 
         b_b_nonb_pair = b.cross(b).cross(nonb)
-        output['b_b_nonb_mass'].fill(dataset=dataset, mass=b_b_nonb_pair.mass.flatten())
-        output['b_b_nonb_eta'].fill(dataset=dataset, eta=b_b_nonb_pair.eta.flatten())
-        output['b_b_nonb_pt'].fill(dataset=dataset, pt=b_b_nonb_pair.pt.flatten())
+        output['b_b_nonb_massmax'].fill(dataset=dataset, mass=b_b_nonb_pair.mass.argmax().flatten())
+        output['b_b_nonb_massmin'].fill(dataset=dataset, mass=b_b_nonb_pair.mass.argmin().flatten())
+
+        goodjets = Jet[Jet['goodjet']==1]
+        jet_pair = goodjets.choose(2)
+        output['jet_pair_massmax'].fill(dataset=dataset, mass=jet_pair.mass.argmax().flatten())
+        output['jet_pair_massmin'].fill(dataset=dataset, mass=jet_pair.mass.argmax().flatten())
+
+        """lepton_pair = Lepton.choose(2)
+        output['lepton_pair_massmax'].fill(dataset=dataset, mass=lepton_pair.mass.argmax().flatten())
+        output['lepton_pair_massmin'].fill(dataset=dataset, mass=lepton_pair.mass.argmin().flatten())"""
+
         return output
 
     def postprocess(self, accumulator):
@@ -82,7 +99,7 @@ def main():
         #"ttbar":        glob.glob("/hadoop/cms/store/user/dspitzba/nanoAOD/ttw_samples/0p1p2/TTJets_SingleLeptFromT_TuneCP5_13TeV-madgraphMLM-pythia8__RunIIAutumn18NanoAODv6-Nano25Oct2019_102X_upgrade2018_realistic_v20-v1/merged/*.root") # adding this is still surprisingly fast (20GB file!)
     }
 
-    histograms = ['b_nonb_mass', 'b_nonb_eta', 'b_nonb_pt', 'b_b_nonb_mass', 'b_b_nonb_eta', 'b_b_nonb_pt' ]
+    histograms = ['b_nonb_massmax', 'b_nonb_massmin', 'b_b_nonb_massmax', 'b_b_nonb_massmin','jet_pair_massmax', 'jet_pair_massmin']
 
     cache = dir_archive(os.path.join(os.path.expandvars(cfg['caches']['base']), cfg['caches']['b_nonb_pairingProcessor']), serialized=True)
     
@@ -115,7 +132,7 @@ def main():
         print (name)
         histogram = output[name]
 
-        ax = hist.plot1d(histogram,overlay="dataset", density=False, stack=False) # make density plots because we don't care about x-sec differences
+        ax = hist.plot1d(histogram,overlay="dataset", density=False, stack=True) # make density plots because we don't care about x-sec differences
         ax.set_yscale('linear') # can be log
         #ax.set_ylim(0,0.1)
         ax.figure.savefig(os.path.join(outdir, "{}.pdf".format(name)))

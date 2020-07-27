@@ -41,34 +41,42 @@ for name in histograms:
     print (name)
     skip = False
     histogram = output[name]
-    if name == 'b_nonb_mass':
+    if name == 'b_nonb_massmax':
+        # rebin
+        new_mass_bins = hist.Bin('mass', r"mass (GeV)", 50, 0, 40)
+        histogram = histogram.rebin('mass', new_mass_bins)
+    elif name == 'b_nonb_massmin':
+        # rebin
+        new_mass_bins = hist.Bin('mass', r"mass (GeV)", 50, 0, 40)
+        histogram = histogram.rebin('mass', new_mass_bins)
+    elif name == 'b_b_nonb_massmax':
+        # rebin
+        new_mass_bins = hist.Bin('mass', r"mass (GeV)", 50, 0, 40)
+        histogram = histogram.rebin('mass', new_mass_bins)
+    elif name == 'b_b_nonb_massmin':
+        # rebin
+        new_mass_bins = hist.Bin('mass', r"mass (GeV)", 50, 0, 40)
+        histogram = histogram.rebin('mass', new_mass_bins)
+    elif name == 'jet_pair_massmax':
+        # rebin
+        new_mass_bins = hist.Bin('mass', r"mass (GeV)", 50, 0, 40)
+        histogram = histogram.rebin('mass', new_mass_bins)
+    elif name == 'jet_pair_massmin':
+        # rebin
+        new_mass_bins = hist.Bin('mass', r"mass (GeV)", 50, 0, 40)
+        histogram = histogram.rebin('mass', new_mass_bins)
+    """elif name == 'lepton_pair_massmax':
         # rebin
         new_mass_bins = hist.Bin('mass', r"mass (GeV)", 100, 0, 100)
         histogram = histogram.rebin('mass', new_mass_bins)
-    elif name == 'b_nonb_eta':
-        # rebin
-        new_eta_bins = hist.Bin("eta", r"$\eta$", 60, -5.5, 5.5)
-        histogram = histogram.rebin('eta', new_eta_bins)
-    elif name == 'b_nonb_pt':
-        # rebin
-        new_pt_bins = hist.Bin('pt', r"$p_{T}$ (GeV)", 600, 0, 1000)
-        histogram = histogram.rebin('pt', new_pt_bins)
-    elif name == 'b_b_nonb_mass':
+    elif name == 'lepton_pair_massmin':
         # rebin
         new_mass_bins = hist.Bin('mass', r"mass (GeV)", 100, 0, 100)
-        histogram = histogram.rebin('mass', new_mass_bins)
-    elif name == 'b_b_nonb_eta':
-        # rebin
-        new_eta_bins = hist.Bin("eta", r"$\eta$", 60, -5.5, 5.5)
-        histogram = histogram.rebin('eta', new_eta_bins)
-    elif name == 'b_b_nonb_pt':
-        # rebin
-        new_pt_bins = hist.Bin('pt', r"$p_{T}$ (GeV)", 600, 0, 1000)
-        histogram = histogram.rebin('pt', new_pt_bins)
+        histogram = histogram.rebin('mass', new_mass_bins)"""
 
 
     if not skip:
-        ax = hist.plot1d(histogram,overlay="dataset", stack=False) # make density plots because we don't care about x-sec differences
+        ax = hist.plot1d(histogram,overlay="dataset", stack=True) # make density plots because we don't care about x-sec differences
         for l in ['linear', 'log']:
             saveFig(ax, plotDir, name, scale=l)
         ax.clear()
