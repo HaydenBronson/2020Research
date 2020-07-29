@@ -27,7 +27,7 @@ class b_nonb_pairingProcessor(processor.ProcessorABC):
     def __init__(self):
         dataset_axis = hist.Cat("dataset", 'Primary dataset')
         pt_axis = hist.Bin("pt", r"$p_{T}$ (GeV)", 600, 0, 1000)
-        mass_axis = hist.Bin("mass", r"mass (GeV)", 50, 0, 40)
+        mass_axis = hist.Bin("mass", r"mass (GeV)", 100, 0, 1000)
         eta_axis = hist.Bin("eta", r"$\eta$", 60, -5.5, 5.5)
         self._accumulator = processor.dict_accumulator({
             'b_nonb_massmax': hist.Hist('Counts', dataset_axis, mass_axis),
@@ -65,18 +65,21 @@ class b_nonb_pairingProcessor(processor.ProcessorABC):
 
         b = Jet[Jet['bjet']==1]
         nonb = Jet[(Jet['goodjet']==1) & (Jet['bjet']==0)]
+        b_nonb_selection = (Jet.counts>0) & (b.counts>=1) & (nonb.counts>=1)
         b_nonb_pair = b.cross(nonb)
-        output['b_nonb_massmax'].fill(dataset=dataset, mass=b_nonb_pair.mass.argmax().flatten())
-        output['b_nonb_massmin'].fill(dataset=dataset, mass=b_nonb_pair.mass.argmin().flatten())
+        output['b_nonb_massmax'].fill(dataset=dataset, mass=b_nonb_pair.mass.max().flatten(), weight=df['weight']['b_nonb_selection'])
+        output['b_nonb_massmin'].fill(dataset=dataset, mass=b_nonb_pair.mass.min().flatten(), weight=df['weight']['b_nonb_selection'])
 
         b_b_nonb_pair = b.cross(b).cross(nonb)
-        output['b_b_nonb_massmax'].fill(dataset=dataset, mass=b_b_nonb_pair.mass.argmax().flatten())
-        output['b_b_nonb_massmin'].fill(dataset=dataset, mass=b_b_nonb_pair.mass.argmin().flatten())
+        b_b_nonb_selection = (Jet.counts>0) & (b.counts>=2) & (nonb.counts>=1)
+        output['b_b_nonb_massmax'].fill(dataset=dataset, mass=b_b_nonb_pair.mass.max().flatten(), weight=df['weight']['b_b_nonb_selection'])
+        output['b_b_nonb_massmin'].fill(dataset=dataset, mass=b_b_nonb_pair.mass.min().flatten(), weight=df['weight']['b_b_nonb_selection'])
 
         goodjets = Jet[Jet['goodjet']==1]
         jet_pair = goodjets.choose(2)
-        output['jet_pair_massmax'].fill(dataset=dataset, mass=jet_pair.mass.argmax().flatten())
-        output['jet_pair_massmin'].fill(dataset=dataset, mass=jet_pair.mass.argmax().flatten())
+        jet_selection = (Jet.counts>=2)
+        output['jet_pair_massmax'].fill(dataset=dataset, mass=jet_pair.mass.max().flatten(), weight=df['weight']['jet_selection'])
+        output['jet_pair_massmin'].fill(dataset=dataset, mass=jet_pair.mass.max().flatten(), weight=df['weight']['jet_selection'])
 
         """lepton_pair = Lepton.choose(2)
         output['lepton_pair_massmax'].fill(dataset=dataset, mass=lepton_pair.mass.argmax().flatten())
