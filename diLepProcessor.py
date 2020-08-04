@@ -149,8 +149,8 @@ class diLepProcessor(processor.ProcessorABC):
         output['jet_pair_massmax'].fill(dataset=dataset, mass=jet_pair[b_nonb_selection].mass.max().flatten(), weight=df['weight'][b_nonb_selection]*cfg['lumi'])
 
         dilep = (Lepton.counts==2)
-        lepton_jet_pair = Lepton[dilep].cross(goodjets)
-        output['lepton_jet_pair_massmax'].fill(dataset=dataset, mass=lepton_jet_pair[dilep].mass.max().flatten(), weight=df['weight'][dilep]*cfg['lumi'])
+        lepton_jet_pair = Lepton.cross(goodjets)
+        output['lepton_jet_pair_massmax'].fill(dataset=dataset, mass=lepton_jet_pair[b_nonb_selection].mass.max().flatten(), weight=df['weight'][b_nonb_selection]*cfg['lumi'])
 
         return output
 
