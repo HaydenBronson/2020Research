@@ -34,32 +34,34 @@ from Tools.helpers import *
 # interactive windows.
 matplotlib.use('Agg')
 
-class simpleProcessor(processor.ProcessorABC):
+class exampleProcessor(processor.ProcessorABC):
     """Dummy processor used to demonstrate the processor principle"""
     def __init__(self):
 
         # we can use a large number of bins and rebin later
         dataset_axis        = hist.Cat("dataset",   "Primary dataset")
         pt_axis             = hist.Bin("pt",        r"$p_{T}$ (GeV)", 600, 0, 1000)
-        mass_axis           = hist.Bin("mass",      r"M (GeV)", 500, 0, 2000)
+        mass_axis           = hist.Bin("mass",      r"M (GeV)", 25, 0, 1500)
         eta_axis            = hist.Bin("eta",       r"$\eta$", 60, -5.5, 5.5)
         multiplicity_axis   = hist.Bin("multiplicity",         r"N", 20, -0.5, 19.5)
 
         self._accumulator = processor.dict_accumulator({
             "MET_pt" :          hist.Hist("Counts", dataset_axis, pt_axis),
+            "pt_spec_max" :          hist.Hist("Counts", dataset_axis, pt_axis),
             "MT" :          hist.Hist("Counts", dataset_axis, pt_axis),
             "b_nonb_massmax" :          hist.Hist("Counts", dataset_axis, mass_axis),
             "N_b" :             hist.Hist("Counts", dataset_axis, multiplicity_axis),
             "N_jet" :           hist.Hist("Counts", dataset_axis, multiplicity_axis),
+            "N_spec" :           hist.Hist("Counts", dataset_axis, multiplicity_axis),
+            "b_b_nonb_massmax" :          hist.Hist("Counts", dataset_axis, mass_axis),
+            "jet_pair_massmax" :          hist.Hist("Counts", dataset_axis, mass_axis),
+            "lepton_jet_pair_massmax" :          hist.Hist("Counts", dataset_axis, mass_axis),
+            "lepton_bjet_pair_massmax" :          hist.Hist("Counts", dataset_axis, mass_axis),
             'cutflow_wjets':      processor.defaultdict_accumulator(int),
             'cutflow_ttbar':      processor.defaultdict_accumulator(int),
             'cutflow_TTW':      processor.defaultdict_accumulator(int),
             'cutflow_TTX':      processor.defaultdict_accumulator(int),
             'cutflow_signal':   processor.defaultdict_accumulator(int),
-            "b_b_nonb_massmax" :          hist.Hist("Counts", dataset_axis, mass_axis),
-            "jet_pair_massmax" :          hist.Hist("Counts", dataset_axis, mass_axis),
-            "lepton_jet_pair_massmax" :          hist.Hist("Counts", dataset_axis, mass_axis),
-            "lepton_bjet_pair_massmax" :          hist.Hist("Counts", dataset_axis, mass_axis),
         })
 
     @property
@@ -125,22 +127,28 @@ class simpleProcessor(processor.ProcessorABC):
             mass = df['Jet_mass'].content,
             goodjet = df['Jet_isGoodJetAll'].content,
             bjet = df['Jet_isGoodBJet'].content,
+            jetId = df['Jet_jetId'].content,
+            puId = df['Jet_puId'].content,
         )
-        
+
         Lepton = JaggedCandidateArray.candidatesfromcounts(
             df['nLepton'],
             pt = df['Lepton_pt'].content,
             eta = df['Lepton_eta'].content,
             phi = df['Lepton_phi'].content,
             mass = df['Lepton_mass'].content,
+            pdgId = df['Lepton_pdgId'].content,
         )
         
         b = Jet[Jet['bjet']==1]
         nonb = Jet[(Jet['goodjet']==1) & (Jet['bjet']==0)]
-        
-        b_nonb_selection = (b.counts>=2) & (nonb.counts>=2) & (df['nLepton']==2) & (df['nVetoLepton']==2) & (df['isSS']==1)
+        spectator = Jet[(abs(Jet.eta)>2.0) & (abs(Jet.eta)<4.7) & (Jet.pt>25) & (Jet['puId']>=7) & (Jet['jetId']>=6)] # 40 GeV seemed good. let's try going lower
+
+        b_nonb_selection = (Jet.counts>3) & (b.counts>=2) & (nonb.counts>=2) & (df['nLepton']==2) & (df['nVetoLepton']==2) & (df['isSS']==1)
         b_nonb_pair = b.cross(nonb)
         output['b_nonb_massmax'].fill(dataset=dataset, mass=b_nonb_pair[b_nonb_selection].mass.max().flatten(), weight=df['weight'][b_nonb_selection]*cfg['lumi'])
+        output['N_spec'].fill(dataset=dataset, multiplicity=spectator[b_nonb_selection].counts, weight=df['weight'][b_nonb_selection]*cfg['lumi'])
+        output['pt_spec_max'].fill(dataset=dataset, pt=spectator[b_nonb_selection & (spectator.counts>0)].pt.max().flatten(), weight=df['weight'][b_nonb_selection & (spectator.counts>0)]*cfg['lumi'])
 
         b_b_nonb_pair = b.cross(b.cross(nonb))
         output['b_b_nonb_massmax'].fill(dataset=dataset, mass=b_b_nonb_pair[b_nonb_selection].mass.max().flatten(), weight=df['weight'][b_nonb_selection]*cfg['lumi'])
@@ -170,28 +178,14 @@ def main():
 
     # Inputs are defined in a dictionary
     # dataset : list of files
-    fileset = {
-        'tW_scattering': glob.glob("/hadoop/cms/store/user/dspitzba/nanoAOD/ttw_samples/0p1p4/tW_scattering__nanoAOD/merged/*.root"),
-        "TTX":           glob.glob("/hadoop/cms/store/user/dspitzba/nanoAOD/ttw_samples/0p1p4/TTZToLLNuNu_M-10_TuneCP5_13TeV-amcatnlo-pythia8__RunIIAutumn18NanoAODv6-Nano25Oct2019_102X_upgrade2018_realistic_v20_ext1-v1/merged/*.root"),
-        "TTW":           glob.glob("/hadoop/cms/store/user/dspitzba/nanoAOD/ttw_samples/0p1p4/TTWJetsToLNu_TuneCP5_13TeV-amcatnloFXFX-madspin-pythia8__RunIIAutumn18NanoAODv6-Nano25Oct2019_102X_upgrade2018_realistic_v20_ext1-v1/merged/*.root") \
-                        + glob.glob("/hadoop/cms/store/user/dspitzba/nanoAOD/ttw_samples/0p1p4/TTWJetsToQQ_TuneCP5_13TeV-amcatnloFXFX-madspin-pythia8__RunIIAutumn18NanoAODv6-Nano25Oct2019_102X_upgrade2018_realistic_v20-v1/merged/*.root"),
-        "ttbar":        [] \
-                        + glob.glob("/hadoop/cms/store/user/dspitzba/nanoAOD/ttw_samples/0p1p4/TTJets_SingleLeptFromT_TuneCP5_13TeV-madgraphMLM-pythia8__RunIIAutumn18NanoAODv6-Nano25Oct2019_102X_upgrade2018_realistic_v20-v1/merged/*.root") \
-                        + glob.glob("/hadoop/cms/store/user/dspitzba/nanoAOD/ttw_samples/0p1p4/TTJets_SingleLeptFromTbar_TuneCP5_13TeV-madgraphMLM-pythia8__RunIIAutumn18NanoAODv6-Nano25Oct2019_102X_upgrade2018_realistic_v20-v1/merged/*.root") \
-                        + glob.glob("/hadoop/cms/store/user/dspitzba/nanoAOD/ttw_samples/0p1p4/TTJets_DiLept_TuneCP5_13TeV-madgraphMLM-pythia8__RunIIAutumn18NanoAODv6-Nano25Oct2019_102X_upgrade2018_realistic_v20-v1/merged/*.root"),
-        "wjets":    [] \
-                    + glob.glob("/hadoop/cms/store/user/dspitzba/nanoAOD/ttw_samples/0p1p4/W1JetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8__RunIIAutumn18NanoAODv6-Nano25Oct2019_102X_upgrade2018_realistic_v20-v1/merged/*.root") \
-                    + glob.glob("/hadoop/cms/store/user/dspitzba/nanoAOD/ttw_samples/0p1p4/W2JetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8__RunIIAutumn18NanoAODv6-Nano25Oct2019_102X_upgrade2018_realistic_v20-v1/merged/*.root") \
-                    + glob.glob("/hadoop/cms/store/user/dspitzba/nanoAOD/ttw_samples/0p1p4/W3JetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8__RunIIAutumn18NanoAODv6-Nano25Oct2019_102X_upgrade2018_realistic_v20-v1/merged/*.root") \
-                    + glob.glob("/hadoop/cms/store/user/dspitzba/nanoAOD/ttw_samples/0p1p4/W4JetsToLNu_TuneCP5_13TeV-madgraphMLM-pythia8__RunIIAutumn18NanoAODv6-Nano25Oct2019_102X_upgrade2018_realistic_v20-v1/merged/*.root"),
-    }
+    from processor.samples import fileset, fileset_small
 
     # histograms
-    histograms = ["MET_pt", "N_b", "N_jet", "MT", "b_nonb_massmax", "b_b_nonb_massmax", "jet_pair_massmax", "lepton_jet_pair_massmax", "lepton_bjet_pair_massmax"]
+    histograms = ["MET_pt", "N_b", "N_jet", "MT", "b_nonb_massmax", "N_spec", "pt_spec_max", "b_b_nonb_massmax", "jet_pair_massmax", "lepton_jet_pair_massmax", "lepton_bjet_pair_massmax"]
 
 
     # initialize cache
-    cache = dir_archive(os.path.join(os.path.expandvars(cfg['caches']['base']), cfg['caches']['simpleProcessor']), serialized=True)
+    cache = dir_archive(os.path.join(os.path.expandvars(cfg['caches']['base']), cfg['caches']['singleLep']), serialized=True)
     if not overwrite:
         cache.load()
 
@@ -200,12 +194,12 @@ def main():
 
     else:
         # Run the processor
-        output = processor.run_uproot_job(fileset,
+        output = processor.run_uproot_job(fileset_small,
                                       treename='Events',
-                                      processor_instance=simpleProcessor(),
+                                      processor_instance=exampleProcessor(),
                                       executor=processor.futures_executor,
                                       executor_args={'workers': 8, 'function_args': {'flatten': False}},
-                                      chunksize=500000,
+                                      chunksize=100000,
                                      )
         cache['fileset']        = fileset
         cache['cfg']            = cfg

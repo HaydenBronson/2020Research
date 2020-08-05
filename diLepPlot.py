@@ -16,7 +16,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 
-from tW_scattering.Tools.helpers import *
+from Tools.helpers import *
 from klepto.archives import dir_archive
 
 def saveFig( ax, path, name, scale='linear', shape=False ):
@@ -74,7 +74,7 @@ my_labels = {
 cfg = loadConfig()
 
 # load the results
-cache = dir_archive(os.path.join(os.path.expandvars(cfg['caches']['base']), cfg['caches']['diLep']), serialized=True)
+cache = dir_archive(os.path.join(os.path.expandvars(cfg['caches']['base']), cfg['caches']['simpleProcessor']), serialized=True)
 cache.load()
 
 histograms = cache.get('histograms')
@@ -112,7 +112,7 @@ for name in histograms:
         # rebin
         new_mass_bins = hist.Bin('mass', r'$M(b, light) \ (GeV)$', 25, 0, 1500)
         histogram = histogram.rebin('mass', new_mass_bins)
-    elif name == 'bb__nonb_massmax':
+    elif name == 'b_b_nonb_massmax':
         # rebin
         new_mass_bins = hist.Bin('mass', r'$M(2b, light) \ (GeV)$', 25, 0, 1500)
         histogram = histogram.rebin('mass', new_mass_bins)
@@ -123,6 +123,10 @@ for name in histograms:
     elif name == 'lepton_jet_pair_massmax':
         # rebin
         new_mass_bins = hist.Bin('mass', r'$M(lepton+jet) \ (GeV)$', 25, 0, 1500)
+        histogram = histogram.rebin('mass', new_mass_bins)
+    elif name == 'lepton_bjet_pair_massmax':
+        # rebin
+        new_mass_bins = hist.Bin('mass', r'$M(lepton+bjet) \ (GeV)$', 25, 0, 1500)
         histogram = histogram.rebin('mass', new_mass_bins)
     else:
         skip = True
