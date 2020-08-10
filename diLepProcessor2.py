@@ -44,6 +44,7 @@ class exampleProcessor(processor.ProcessorABC):
         mass_axis           = hist.Bin("mass",      r"M (GeV)", 25, 0, 1500)
         eta_axis            = hist.Bin("eta",       r"$\eta$", 60, -5.5, 5.5)
         multiplicity_axis   = hist.Bin("multiplicity",         r"N", 20, -0.5, 19.5)
+        phi_axis            = hist.Bin("phi",       r"$\phi", 60, -3.5, 3.5)
 
         self._accumulator = processor.dict_accumulator({
             "MET_pt" :          hist.Hist("Counts", dataset_axis, pt_axis),
@@ -57,6 +58,19 @@ class exampleProcessor(processor.ProcessorABC):
             "jet_pair_massmax" :          hist.Hist("Counts", dataset_axis, mass_axis),
             "lepton_jet_pair_massmax" :          hist.Hist("Counts", dataset_axis, mass_axis),
             "lepton_bjet_pair_massmax" :          hist.Hist("Counts", dataset_axis, mass_axis),
+            'S_T': hist.Hist('Counts', dataset_axis, pt_axis),
+            'H_T': hist.Hist('Counts', dataset_axis, pt_axis),
+            'b_pt': hist.Hist('Counts', dataset_axis, pt_axis),
+            'b_phi': hist.Hist('Counts', dataset_axis, phi_axis),
+            'b_eta': hist.Hist('Counts', dataset_axis, eta_axis),
+            'leading_nonb_pt': hist.Hist('Counts', dataset_axis, pt_axis),
+            'leading_nonb_phi': hist.Hist('Counts', dataset_axis, phi_axis),
+            'leading_nonb_eta': hist.Hist('Counts', dataset_axis, eta_axis),
+            'lepton_pt': hist.Hist('Counts', dataset_axis, pt_axis),
+            'lepton_phi': hist.Hist('Counts', dataset_axis, phi_axis),
+            'lepton_eta': hist.Hist('Counts', dataset_axis, eta_axis),
+            'lepton_deltaphi': hist.Hist('Counts', dataset_axis, phi_axis),
+            'lepton_deltaeta': hist.Hist('Counts', dataset_axis, eta_axis),
             'cutflow_wjets':      processor.defaultdict_accumulator(int),
             'cutflow_ttbar':      processor.defaultdict_accumulator(int),
             'cutflow_TTW':      processor.defaultdict_accumulator(int),
@@ -110,7 +124,7 @@ class exampleProcessor(processor.ProcessorABC):
         output['cutflow_signal']['btags'] += sum(df['weight'][(df['dataset']=='tW_scattering') & cutFlow].flatten())
 
         # preselection of events
-        selection = ((df['nLepton']==2) & (df['nVetoLepton']==2)) & (df['isSS']==1)
+        selection = ((df['nLepton']==2) & (df['nVetoLepton']==2)) & (df['isSS']==1) & (df['nGoodBTag']==2) & (df['nGoodJet']>=3)
         #df = df[((df['nLepton']==1) & (df['nGoodJet']>5) & (df['nGoodBTag']==2))]
 
         # And fill the histograms
@@ -130,7 +144,7 @@ class exampleProcessor(processor.ProcessorABC):
             jetId = df['Jet_jetId'].content,
             puId = df['Jet_puId'].content,
         )
-
+ 
         Lepton = JaggedCandidateArray.candidatesfromcounts(
             df['nLepton'],
             pt = df['Lepton_pt'].content,
@@ -144,7 +158,7 @@ class exampleProcessor(processor.ProcessorABC):
         nonb = Jet[(Jet['goodjet']==1) & (Jet['bjet']==0)]
         spectator = Jet[(abs(Jet.eta)>2.0) & (abs(Jet.eta)<4.7) & (Jet.pt>25) & (Jet['puId']>=7) & (Jet['jetId']>=6)] # 40 GeV seemed good. let's try going lower
 
-        b_nonb_selection = (Jet.counts>3) & (b.counts>=2) & (nonb.counts>=2) & (df['nLepton']==2) & (df['nVetoLepton']==2) & (df['isSS']==1)
+        b_nonb_selection = (Jet.counts>3) & (b.counts==2) & (nonb.counts>=2) & (df['nLepton']==2) & (df['nVetoLepton']==2) & (df['isSS']==1)
         b_nonb_pair = b.cross(nonb)
         output['b_nonb_massmax'].fill(dataset=dataset, mass=b_nonb_pair[b_nonb_selection].mass.max().flatten(), weight=df['weight'][b_nonb_selection]*cfg['lumi'])
         output['N_spec'].fill(dataset=dataset, multiplicity=spectator[b_nonb_selection].counts, weight=df['weight'][b_nonb_selection]*cfg['lumi'])
@@ -162,6 +176,31 @@ class exampleProcessor(processor.ProcessorABC):
 
         lepton_bjet_pair = Lepton.cross(b)
         output['lepton_bjet_pair_massmax'].fill(dataset=dataset, mass=lepton_bjet_pair[b_nonb_selection].mass.max().flatten(), weight=df['weight'][b_nonb_selection]*cfg['lumi'])
+
+        sum_all_pt = (df['Jet_pt'][b_nonb_selection].sum())+(df['MET_pt'][b_nonb_selection].sum())+(df['Lepton_pt'][b_nonb_selection].sum())
+        output['S_T'].fill(dataset=dataset, pt=sum_all_pt.flatten(), weight=df['weight'][b_nonb_selection]*cfg['lumi'])
+
+        output['H_T'].fill(dataset=dataset, pt=df['Jet_pt'][b_nonb_selection].sum().flatten(), weight=df['weight'][b_nonb_selection]*cfg['lumi'])
+        
+        bs = b[b_nonb_selection].choose(2)
+        output['b_eta'].fill(dataset=dataset, eta=bs.eta.flatten(), weight=df['weight'][b_nonb_selection]*cfg['lumi'])
+        output['b_phi'].fill(dataset=dataset, phi=bs.phi.flatten(), weight=df['weight'][b_nonb_selection]*cfg['lumi'])
+        output['b_pt'].fill(dataset=dataset, pt=bs.pt.flatten(), weight=df['weight'][b_nonb_selection]*cfg['lumi'])
+
+        leading_nonb = Jet[(b_nonb_selection) & (Jet['goodjet']==1) & (Jet['bjet']==0)].pt.argmax()
+        output['leading_nonb_eta'].fill(dataset=dataset, eta=nonb[leading_nonb].eta.flatten(), weight=df['weight'][b_nonb_selection]*cfg['lumi'])
+        output['leading_nonb_phi'].fill(dataset=dataset, phi=nonb[leading_nonb].phi.flatten(), weight=df['weight'][b_nonb_selection]*cfg['lumi'])
+        output['leading_nonb_pt'].fill(dataset=dataset, pt=nonb.pt[leading_nonb].flatten(), weight=df['weight'][b_nonb_selection]*cfg['lumi'])
+
+        lep = Lepton[b_nonb_selection].choose(2)
+        output['lepton_eta'].fill(dataset=dataset, eta=lep.eta.flatten(), weight=df['weight'][b_nonb_selection]*cfg['lumi'])
+        output['lepton_phi'].fill(dataset=dataset, phi=lep.phi.flatten(), weight=df['weight'][b_nonb_selection]*cfg['lumi'])
+        output['lepton_pt'].fill(dataset=dataset, pt=lep.pt.flatten(), weight=df['weight'][b_nonb_selection]*cfg['lumi'])
+
+        deltaphi = (lep.i0.phi - lep.i1.phi + 3.141592653589793) % (2 * 3.141592653589793) - 3.141592653589793
+        deltaeta = abs(lep.i0.eta - lep.i1.eta)
+        output['lepton_deltaphi'].fill(dataset=dataset, phi=deltaphi.flatten(), weight=df['weight'][b_nonb_selection]*cfg['lumi'])
+        output['lepton_deltaeta'].fill(dataset=dataset, eta=deltaeta.flatten(), weight=df['weight'][b_nonb_selection]*cfg['lumi'])
 
         return output
 
@@ -182,6 +221,7 @@ def main():
 
     # histograms
     histograms = ["MET_pt", "N_b", "N_jet", "MT", "b_nonb_massmax", "N_spec", "pt_spec_max", "b_b_nonb_massmax", "jet_pair_massmax", "lepton_jet_pair_massmax", "lepton_bjet_pair_massmax"]
+    histograms += ['S_T', 'H_T', 'b_eta', 'b_phi', 'b_pt', 'leading_nonb_eta', 'leading_nonb_phi', 'leading_nonb_pt', 'lepton_eta', 'lepton_phi', 'lepton_pt', 'lepton_deltaphi', 'lepton_deltaeta']
 
 
     # initialize cache
@@ -189,16 +229,16 @@ def main():
     if not overwrite:
         cache.load()
 
-    if cfg == cache.get('cfg') and histograms == cache.get('histograms') and fileset == cache.get('fileset') and cache.get('simple_output'):
+    if cfg == cache.get('cfg') and histograms == cache.get('histograms') and fileset == cache.get('fileset_small') and cache.get('simple_output'):
         output = cache.get('simple_output')
 
     else:
         # Run the processor
-        output = processor.run_uproot_job(fileset_small,
+        output = processor.run_uproot_job(fileset,
                                       treename='Events',
                                       processor_instance=exampleProcessor(),
                                       executor=processor.futures_executor,
-                                      executor_args={'workers': 8, 'function_args': {'flatten': False}},
+                                      executor_args={'workers': 12, 'function_args': {'flatten': False}},
                                       chunksize=100000,
                                      )
         cache['fileset']        = fileset

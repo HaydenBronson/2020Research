@@ -123,7 +123,7 @@ cache.load()
 
 histograms = cache.get('histograms')
 output = cache.get('simple_output')
-plotDir = os.path.expandvars(cfg['meta']['plots']) + '/dilepton plots withSS/'
+plotDir = os.path.expandvars(cfg['meta']['plots']) + '/dilepton_new/'
 finalizePlotDir(plotDir)
 
 if not histograms:
@@ -191,6 +191,71 @@ for name in histograms:
         axis = 'mass'
         new_mass_bins = hist.Bin('mass', r'$M(lepton+bjet) \ (GeV)$', 25, 0, 1500)
         histogram = histogram.rebin('mass', new_mass_bins)
+    elif name == 'S_T':
+        # rebin
+        axis = 'pt'
+        new_pt_bins = hist.Bin("pt", r"$Sum all p_{T}$ (GeV)", 600, 0, 1000)
+        histogram = histogram.rebin('pt', new_pt_bins)
+    elif name == 'H_T':
+        # rebin
+        axis = 'pt'
+        new_pt_bins = hist.Bin("pt", r"$Sum jet p_{T}$ (GeV)", 600, 0, 1000)
+        histogram = histogram.rebin('pt', new_pt_bins)
+    elif name == 'b_eta':
+        # rebin
+        axis = 'eta'
+        new_eta_bins = hist.Bin("eta", r"$b \eta$", 60, -5.5, 5.5)
+        histogram = histogram.rebin('eta', new_eta_bins)
+    elif name == 'b_pt':
+        # rebin
+        axis = 'pt'
+        new_pt_bins = hist.Bin("pt", r"$b p_{T}$ (GeV)", 600, 0, 1000)
+        histogram = histogram.rebin('pt', new_pt_bins)
+    elif name == 'b_phi':
+        # rebin
+        axis = 'phi'
+        new_phi_bins = hist.Bin("phi", r"$b \phi$", 60, -3.5, 3.5)
+        histogram = histogram.rebin('phi', new_phi_bins)
+    elif name == 'lepton_eta':
+        # rebin
+        axis = 'eta'
+        new_eta_bins = hist.Bin("eta", r"$lepton \eta$", 60, -5.5, 5.5)
+        histogram = histogram.rebin('eta', new_eta_bins)
+    elif name == 'lepton_pt':
+        # rebin
+        axis = 'pt'
+        new_pt_bins = hist.Bin("pt", r"$lepton p_{T}$ (GeV)", 600, 0, 1000)
+        histogram = histogram.rebin('pt', new_pt_bins)
+    elif name == 'lepton_phi':
+        # rebin
+        axis = 'phi'
+        new_phi_bins = hist.Bin("phi", r"$lepton \phi$", 60, -3.5, 3.5)
+        histogram = histogram.rebin('phi', new_phi_bins)
+    elif name == 'leading_nonb_eta':
+        # rebin
+        axis = 'eta'
+        new_eta_bins = hist.Bin("eta", r"$leadingnonb \eta$", 60, -5.5, 5.5)
+        histogram = histogram.rebin('eta', new_eta_bins)
+    elif name == 'leading_nonb_pt':
+        # rebin
+        axis = 'pt'
+        new_pt_bins = hist.Bin("pt", r"$leadingnonb p_{T}$ (GeV)", 600, 0, 1000)
+        histogram = histogram.rebin('pt', new_pt_bins)
+    elif name == 'leading_nonb_phi':
+        # rebin
+        axis = 'phi'
+        new_phi_bins = hist.Bin("phi", r"$leadingnonb \phi$", 60, -3.5, 3.5)
+        histogram = histogram.rebin('phi', new_phi_bins)
+    elif name == 'lepton_deltaphi':
+        # rebin
+        axis = 'phi'
+        new_phi_bins = hist.Bin("phi", r"$lepton delta\phi$", 60, -3.5, 3.5)
+        histogram = histogram.rebin('phi', new_phi_bins)
+    elif name == 'lepton_deltaeta':
+        # rebin
+        axis = 'eta'
+        new_eta_bins = hist.Bin("eta", r"$lepton delta\eta$", 60, -5.5, 5.5)
+        histogram = histogram.rebin('eta', new_eta_bins)
     else:
         skip = True
 
