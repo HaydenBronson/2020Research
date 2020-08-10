@@ -273,6 +273,10 @@ for name in histograms:
             histogram.fill(dataset='pseudodata', mass=values)
         elif axis == 'multiplicity':
             histogram.fill(dataset='pseudodata', multiplicity=values)
+        elif axis == 'eta':
+            histogram.fill(dataset='pseudodata', eta=values)
+        elif axis == 'phi':
+            histogram.fill(dataset='pseudodata', phi=values)
 
         
         import re
