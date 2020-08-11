@@ -238,7 +238,7 @@ def main():
                                       treename='Events',
                                       processor_instance=exampleProcessor(),
                                       executor=processor.futures_executor,
-                                      executor_args={'workers': 12, 'function_args': {'flatten': False}},
+                                      executor_args={'workers': 24, 'function_args': {'flatten': False}},
                                       chunksize=100000,
                                      )
         cache['fileset']        = fileset
